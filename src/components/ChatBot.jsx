@@ -32,7 +32,7 @@ const ChatBot = () => {
 
     // Use system instructions from separate file
 
-    const API_KEY = "ENTER_API_KEY";
+    const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 
     const payload = {
       contents: updatedChatHistory,
