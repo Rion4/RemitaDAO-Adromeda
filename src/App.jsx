@@ -339,7 +339,7 @@ const Footer = () => (
           </p>
           <div className="flex gap-4">
             <a
-              href="https://github.com/your-repo/remita-dao"
+              href="https://github.com/Rion4/RemitaDAO-Adromeda"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-2 px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors duration-300"
