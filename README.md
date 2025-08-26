@@ -1,6 +1,6 @@
 # RemitaDAO: Smart Automated Remittance Vaults
 
-RemitaDAO is a decentralized application built for the aOS Global Buildathon, designed to transform how people send money to their families abroad. Instead of a simple transfer, it allows senders to program their remittances, automatically splitting each payment into different on-chain "vaults" for immediate cash, long-term savings, and yield-generating investments.
+RemitaDAO is a decentralized application built for the aOS Global Buildathon, designed to transform how people send money to their families abroad. A DAO, or Decentralized Autonomous Organization, is an organization where control is spread out amongst its members, not centralized. The core feature of a DAO is a consensus-based decision-making process, usually through voting with governance tokens. Instead of a simple transfer, it allows senders to program their remittances, automatically splitting each payment into different on-chain "vaults" for immediate cash, long-term savings, and yield-generating investments.
 
 ## The Problem
 
@@ -14,11 +14,11 @@ Our application uses a sophisticated "Multi-Vault" architecture built on Androme
 
 ### Features
 
-*   **Automated Splitting**: A core Splitter contract automatically distributes funds sent by the user according to their pre-configured rules.
-*   **Long-Term Savings**: A Vesting contract acts as a secure, on-chain "Savings Vault," locking funds for a predetermined period to ensure they are available for future goals.
-*   **Yield Generation**: A CW20 Staking contract and a custom CW20 token (RDSHARE) create an "Investment Vault," allowing recipients to stake their tokens and earn yield.
-*   **Total Control & Transparency**: The entire system is built on-chain. Users always maintain full custody of their funds, and all transactions are transparently recorded on the blockchain.
-*   **AI-Powered Suggestions**: The application includes a smart assistant that provides helpful financial suggestions to users, such as encouraging savings or highlighting investment opportunities.
+- **Automated Splitting**: A core Splitter contract automatically distributes funds sent by the user according to their pre-configured rules.
+- **Long-Term Savings**: A Vesting contract acts as a secure, on-chain "Savings Vault," locking funds for a predetermined period to ensure they are available for future goals.
+- **Yield Generation**: A CW20 Staking contract and a custom CW20 token (RDSHARE) create an "Investment Vault," allowing recipients to stake their tokens and earn yield.
+- **Total Control & Transparency**: The entire system is built on-chain. Users always maintain full custody of their funds, and all transactions are transparently recorded on the blockchain.
+- **AI-Powered Suggestions**: The application includes a smart assistant that provides helpful financial suggestions to users, such as encouraging savings or highlighting investment opportunities.
 
 ## Getting Started
 
@@ -28,9 +28,9 @@ Follow these instructions to set up and run the project locally for development 
 
 Before you begin, ensure you have the following installed:
 
-*   **Node.js**: Version 20.19+ or 22.12+
-*   **NPM**: Version 10.x or higher
-*   **Keplr Wallet**: The browser extension for interacting with Cosmos blockchains.
+- **Node.js**: Version 20.19+ or 22.12+
+- **NPM**: Version 10.x or higher
+- **Keplr Wallet**: The browser extension for interacting with Cosmos blockchains.
 
 ### Installation & Setup
 
@@ -60,6 +60,7 @@ Before you begin, ensure you have the following installed:
     ```bash
     npx tailwindcss init -p
     ```
+
     Ensure your `tailwind.config.js` is set up to scan your source files.
 
 5.  **Run the Project**:
@@ -68,26 +69,27 @@ Before you begin, ensure you have the following installed:
     ```bash
     npm run dev
     ```
+
     Your application will now be running at `http://localhost:5173`.
 
 ## How It Works: The Hybrid Model
 
 After extensive testing revealed instability and critical bugs in the official Andromeda testnets, we engineered a resilient "Hybrid Model" that is deployed on the stable Stargaze Testnet.
 
-*   **On-Chain Logic (Splitter)**: The Splitter contract, which is configured by the user, acts as the primary manager for funds sent in the native currency (STARS). It automatically forwards portions for "Cash" (to the recipient's wallet) and "Savings" (to the Vesting contract).
-*   **Frontend Orchestration (The "Brain")**: The React frontend is the intelligent orchestrator. When a user clicks "Send Funds," the application constructs a single transaction that contains multiple messages:
-    *   An execute message to the Splitter contract, sending the STARS for the cash and savings portions.
-    *   A second execute message to the CW20 Token contract, transferring the "Investment" portion of RDSHARE tokens directly to the recipient.
+- **On-Chain Logic (Splitter)**: The Splitter contract, which is configured by the user, acts as the primary manager for funds sent in the native currency (STARS). It automatically forwards portions for "Cash" (to the recipient's wallet) and "Savings" (to the Vesting contract).
+- **Frontend Orchestration (The "Brain")**: The React frontend is the intelligent orchestrator. When a user clicks "Send Funds," the application constructs a single transaction that contains multiple messages:
+  - An execute message to the Splitter contract, sending the STARS for the cash and savings portions.
+  - A second execute message to the CW20 Token contract, transferring the "Investment" portion of RDSHARE tokens directly to the recipient.
 
 The user approves one single transaction in their Keplr wallet, but it performs multiple, sophisticated actions on the blockchain, demonstrating the full power of the Cosmos SDK and our multi-contract architecture.
 
 ## Tech Stack
 
-*   **Frontend**: React, Vite, Tailwind CSS
-*   **Blockchain Interaction**: CosmJS, Keplr Wallet
-*   **Blockchain Platform**: Stargaze Testnet
-*   **Smart Contracts**: Andromeda OS Digital Objects (ADOs)
-    *   Splitter
-    *   Vesting
-    *   CW20
-    *   CW20 Staking
+- **Frontend**: React, Vite, Tailwind CSS
+- **Blockchain Interaction**: CosmJS, Keplr Wallet
+- **Blockchain Platform**: Stargaze Testnet
+- **Smart Contracts**: Andromeda OS Digital Objects (ADOs)
+  - Splitter
+  - Vesting
+  - CW20
+  - CW20 Staking

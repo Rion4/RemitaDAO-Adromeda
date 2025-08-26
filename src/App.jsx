@@ -456,7 +456,7 @@ const DashboardNav = ({ onDisconnect, onGoHome, address }) => (
             <Wallet className="text-white" size={16} />
           </div>
           <div className="text-left">
-            <div className="text-xs text-gray-400">Welcome back, Alex</div>
+            <div className="text-xs text-gray-400">Hello</div>
             <div className="text-sm text-gray-300 font-mono">
               {address
                 ? `${address.substring(0, 10)}...${address.substring(
@@ -605,19 +605,18 @@ const Dashboard = ({
     localStorage.setItem(`${address}_${key}`, value);
   };
 
-  const [walletBalance, setWalletBalance] = useState(() =>
-    getPersistedBalance("walletBalance", "7050")
-  );
-  const [cashBalance, setCashBalance] = useState(() =>
-    getPersistedBalance("cashBalance", "1250")
-  );
+  const [walletBalance, setWalletBalance] = useState("0");
+  const [cashBalance, setCashBalance] = useState("0");
   const [savingsBalance, setSavingsBalance] = useState(() =>
-    getPersistedBalance("savingsBalance", "5000")
+    getPersistedBalance("savingsBalance", "0")
   );
   const [investmentBalance, setInvestmentBalance] = useState(() =>
-    getPersistedBalance("investmentBalance", "800")
+    getPersistedBalance("investmentBalance", "0")
   );
   const [isLoading, setIsLoading] = useState(true);
+
+  // Real-time date and time state
+  const [currentDateTime, setCurrentDateTime] = useState(new Date());
 
   // Toast and Transaction History State
   const [toast, setToast] = useState(null);
@@ -632,35 +631,20 @@ const Dashboard = ({
 
     setIsLoading(true);
     try {
+      // Only fetch wallet balance from blockchain (real balance)
       const user = await client.getBalance(address, "ustars");
-      const newWalletBalance = (parseInt(user.amount) / 10 ** 6).toFixed(0);
+      const newWalletBalance = (parseInt(user.amount) / 10 ** 6).toFixed(1);
       setWalletBalance(newWalletBalance);
       setPersistedBalance("walletBalance", newWalletBalance);
 
+      // Only fetch cash balance from recipient address
       const cash = await client.getBalance(RECIPIENT_ADDRESS, "ustars");
       const newCashBalance = (parseInt(cash.amount) / 10 ** 6).toFixed(0);
       setCashBalance(newCashBalance);
       setPersistedBalance("cashBalance", newCashBalance);
 
-      const savings = await client.getBalance(
-        VESTING_CONTRACT_ADDRESS,
-        "ustars"
-      );
-      const newSavingsBalance = (parseInt(savings.amount) / 10 ** 6).toFixed(0);
-      setSavingsBalance(newSavingsBalance);
-      setPersistedBalance("savingsBalance", newSavingsBalance);
-
-      const investmentQuery = { balance: { address: RECIPIENT_ADDRESS } };
-      const investment = await signingClient.queryContractSmart(
-        TOKEN_CONTRACT_ADDRESS,
-        investmentQuery
-      );
-      const newInvestmentBalance = (
-        parseInt(investment.balance) /
-        10 ** 6
-      ).toFixed(0);
-      setInvestmentBalance(newInvestmentBalance);
-      setPersistedBalance("investmentBalance", newInvestmentBalance);
+      // Don't fetch savings and investment from blockchain - keep persisted transaction totals
+      // These represent accumulated amounts from user transactions, not actual contract balances
     } catch (error) {
       console.error("Failed to fetch balances:", error);
     } finally {
@@ -670,27 +654,25 @@ const Dashboard = ({
 
   useEffect(() => {
     if (client && address && signingClient) {
-      // Check if this is a fresh wallet connection or page refresh
-      const sessionKey = `${address}_session_${Date.now()}`;
-      const existingSession = sessionStorage.getItem(`${address}_connected`);
+      // Only clear wallet balance to ensure fresh fetch from blockchain
+      // Keep savings and investment balances as they represent transaction history
+      localStorage.removeItem(`${address}_walletBalance`);
+      localStorage.removeItem(`${address}_cashBalance`);
 
-      if (!existingSession) {
-        // Fresh wallet connection - always fetch from blockchain
-        sessionStorage.setItem(`${address}_connected`, "true");
-        fetchBalances();
-      } else {
-        // Page refresh - use persisted data if available, otherwise fetch
-        const hasPersistedData = localStorage.getItem(
-          `${address}_walletBalance`
-        );
-        if (!hasPersistedData) {
-          fetchBalances();
-        } else {
-          setIsLoading(false);
-        }
-      }
+      // Always fetch fresh balance from blockchain when wallet connects
+      // This ensures the displayed balance matches the actual wallet balance
+      fetchBalances();
     }
   }, [client, address, signingClient]);
+
+  // Real-time date and time update
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentDateTime(new Date());
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
 
   // Toast utility functions
   const showToast = (message, type = "info") => {
@@ -833,16 +815,18 @@ const Dashboard = ({
                   👋
                 </div>
                 <div>
-                  <h1 className="text-3xl font-bold text-white">
-                    Welcome back, Alex
-                  </h1>
+                  <h1 className="text-3xl font-bold text-white">Hello</h1>
                   <p className="text-gray-400">RemitaDAO Dashboard</p>
                 </div>
               </div>
             </div>
             <div className="text-right">
-              <div className="text-sm text-gray-400">11:24:00 PM</div>
-              <div className="text-sm text-gray-500">8/24/2025</div>
+              <div className="text-sm text-gray-400">
+                {currentDateTime.toLocaleTimeString()}
+              </div>
+              <div className="text-sm text-gray-500">
+                {currentDateTime.toLocaleDateString()}
+              </div>
             </div>
           </div>
 
@@ -1096,13 +1080,13 @@ export default function App() {
   };
 
   const handleDisconnect = () => {
-    // Clear persisted data for the current address
+    // Clear only wallet and cash balances (keep savings, investment, and transaction history)
     if (address) {
       localStorage.removeItem(`${address}_walletBalance`);
       localStorage.removeItem(`${address}_cashBalance`);
-      localStorage.removeItem(`${address}_savingsBalance`);
-      localStorage.removeItem(`${address}_investmentBalance`);
-      localStorage.removeItem(`${address}_transactions`);
+      // Keep savings and investment balances: localStorage.removeItem(`${address}_savingsBalance`);
+      // Keep investment balance: localStorage.removeItem(`${address}_investmentBalance`);
+      // Keep transaction history: localStorage.removeItem(`${address}_transactions`);
       sessionStorage.removeItem(`${address}_connected`);
     }
 
