@@ -592,10 +592,6 @@ const Dashboard = ({
   const getPersistedBalance = (key, defaultValue) => {
     if (!address) return defaultValue;
     const stored = localStorage.getItem(`${address}_${key}`);
-    console.log(
-      `Getting persisted ${key} for ${address}:`,
-      stored || defaultValue
-    );
     return stored ? stored : defaultValue;
   };
 
@@ -627,13 +623,26 @@ const Dashboard = ({
   });
 
   const fetchBalances = async () => {
-    if (!client || !address || !signingClient) return;
+    if (!client || !address || !signingClient) {
+      console.log("Missing dependencies for fetchBalances:", {
+        client: !!client,
+        address: !!address,
+        signingClient: !!signingClient,
+      });
+      return;
+    }
 
     setIsLoading(true);
     try {
+      console.log("Fetching balance for address:", address);
+
       // Only fetch wallet balance from blockchain (real balance)
       const user = await client.getBalance(address, "ustars");
-      const newWalletBalance = (parseInt(user.amount) / 10 ** 6).toFixed(1);
+      console.log("Raw balance from blockchain:", user);
+
+      const newWalletBalance = (parseInt(user.amount) / 10 ** 6).toFixed(2);
+      console.log("Formatted wallet balance:", newWalletBalance);
+
       setWalletBalance(newWalletBalance);
       setPersistedBalance("walletBalance", newWalletBalance);
 
@@ -643,25 +652,39 @@ const Dashboard = ({
       setCashBalance(newCashBalance);
       setPersistedBalance("cashBalance", newCashBalance);
 
+      console.log("Successfully fetched balances");
       // Don't fetch savings and investment from blockchain - keep persisted transaction totals
       // These represent accumulated amounts from user transactions, not actual contract balances
     } catch (error) {
       console.error("Failed to fetch balances:", error);
+      showToast(
+        "Failed to fetch wallet balance. Please try refreshing.",
+        "error"
+      );
+      // Set default values on error
+      setWalletBalance("0");
+      setCashBalance("0");
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
+    // Only fetch when all dependencies are ready
     if (client && address && signingClient) {
-      // Only clear wallet balance to ensure fresh fetch from blockchain
-      // Keep savings and investment balances as they represent transaction history
-      localStorage.removeItem(`${address}_walletBalance`);
-      localStorage.removeItem(`${address}_cashBalance`);
+      console.log("All dependencies ready, fetching balances...");
+      // Small delay to ensure clients are fully initialized
+      const timer = setTimeout(() => {
+        fetchBalances();
+      }, 100);
 
-      // Always fetch fresh balance from blockchain when wallet connects
-      // This ensures the displayed balance matches the actual wallet balance
-      fetchBalances();
+      return () => clearTimeout(timer);
+    } else {
+      console.log("Waiting for dependencies:", {
+        hasClient: !!client,
+        hasAddress: !!address,
+        hasSigningClient: !!signingClient,
+      });
     }
   }, [client, address, signingClient]);
 
@@ -1053,6 +1076,7 @@ export default function App() {
   const [showDashboard, setShowDashboard] = useState(false);
 
   const chainId = "elgafar-1";
+  // Stargaze testnet RPC endpoint
   const rpcEndpoint = "https://rpc.elgafar-1.stargaze-apis.com";
 
   const connectWallet = async () => {
@@ -1060,22 +1084,42 @@ export default function App() {
       alert("Please install the Keplr wallet extension.");
       return;
     }
+
     try {
+      console.log("Connecting to Keplr wallet...");
       await window.keplr.enable(chainId);
+
       const offlineSigner = window.keplr.getOfflineSigner(chainId);
       const accounts = await offlineSigner.getAccounts();
-      setAddress(accounts[0].address);
+      console.log("Wallet connected, address:", accounts[0].address);
 
+      console.log("Connecting to RPC endpoint:", rpcEndpoint);
+
+      // Connect SigningClient (simpler approach)
+      console.log("Attempting to connect SigningClient...");
       const signingClient = await SigningCosmWasmClient.connectWithSigner(
         rpcEndpoint,
         offlineSigner
       );
+      console.log("SigningClient connected successfully");
+
+      // Connect StargateClient
+      console.log("Attempting to connect StargateClient...");
       const client = await StargateClient.connect(rpcEndpoint);
+      console.log("StargateClient connected successfully");
+
+      // Set all state together to ensure they're available when Dashboard mounts
+      setAddress(accounts[0].address);
       setSigningClient(signingClient);
       setClient(client);
       setShowDashboard(true);
+
+      console.log("Dashboard ready to show");
     } catch (error) {
-      alert(`Failed to connect wallet: ${error.message}`);
+      console.error("Failed to connect wallet:", error);
+      alert(
+        `Failed to connect wallet: ${error.message}\n\nPlease check your internet connection and try again.`
+      );
     }
   };
 
