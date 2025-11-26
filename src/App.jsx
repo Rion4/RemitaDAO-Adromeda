@@ -1079,6 +1079,9 @@ export default function App() {
   // Stargaze testnet RPC endpoint
   const rpcEndpoint = "https://rpc.elgafar-1.stargaze-apis.com";
 
+  // Demo mode flag - set to true to bypass RPC connection for testing
+  const DEMO_MODE = false;
+
   const connectWallet = async () => {
     if (!window.keplr) {
       alert("Please install the Keplr wallet extension.");
@@ -1093,19 +1096,44 @@ export default function App() {
       const accounts = await offlineSigner.getAccounts();
       console.log("Wallet connected, address:", accounts[0].address);
 
+      if (DEMO_MODE) {
+        console.log("Running in DEMO MODE - using mock clients");
+        // Set address and show dashboard without real RPC connection
+        setAddress(accounts[0].address);
+        setSigningClient({ demo: true }); // Mock client
+        setClient({ demo: true }); // Mock client
+        setShowDashboard(true);
+        return;
+      }
+
       console.log("Connecting to RPC endpoint:", rpcEndpoint);
 
-      // Connect SigningClient (simpler approach)
+      // Try with a timeout
+      const connectWithTimeout = async (promise, timeoutMs, errorMsg) => {
+        return Promise.race([
+          promise,
+          new Promise((_, reject) =>
+            setTimeout(() => reject(new Error(errorMsg)), timeoutMs)
+          ),
+        ]);
+      };
+
+      // Connect SigningClient with timeout
       console.log("Attempting to connect SigningClient...");
-      const signingClient = await SigningCosmWasmClient.connectWithSigner(
-        rpcEndpoint,
-        offlineSigner
+      const signingClient = await connectWithTimeout(
+        SigningCosmWasmClient.connectWithSigner(rpcEndpoint, offlineSigner),
+        15000,
+        "SigningClient connection timeout. The RPC endpoint may be down."
       );
       console.log("SigningClient connected successfully");
 
-      // Connect StargateClient
+      // Connect StargateClient with timeout
       console.log("Attempting to connect StargateClient...");
-      const client = await StargateClient.connect(rpcEndpoint);
+      const client = await connectWithTimeout(
+        StargateClient.connect(rpcEndpoint),
+        15000,
+        "StargateClient connection timeout. The RPC endpoint may be down."
+      );
       console.log("StargateClient connected successfully");
 
       // Set all state together to ensure they're available when Dashboard mounts
@@ -1117,9 +1145,28 @@ export default function App() {
       console.log("Dashboard ready to show");
     } catch (error) {
       console.error("Failed to connect wallet:", error);
-      alert(
-        `Failed to connect wallet: ${error.message}\n\nPlease check your internet connection and try again.`
+
+      // Offer demo mode if RPC fails
+      const useDemoMode = confirm(
+        `Failed to connect to RPC endpoint: ${error.message}\n\n` +
+          `The Stargaze testnet may be down or unreachable.\n\n` +
+          `Would you like to continue in DEMO MODE?\n` +
+          `(You can view the UI but transactions won't work)`
       );
+
+      if (useDemoMode) {
+        try {
+          const offlineSigner = window.keplr.getOfflineSigner(chainId);
+          const accounts = await offlineSigner.getAccounts();
+          setAddress(accounts[0].address);
+          setSigningClient({ demo: true });
+          setClient({ demo: true });
+          setShowDashboard(true);
+          console.log("Running in DEMO MODE");
+        } catch (demoError) {
+          alert("Failed to enter demo mode: " + demoError.message);
+        }
+      }
     }
   };
 
